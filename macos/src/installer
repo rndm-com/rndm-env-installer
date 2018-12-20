@@ -1,0 +1,76 @@
+#!/usr/bin/env bash
+
+function install () {
+
+    function install_homebrew () {
+        /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)" </dev/null \
+        && export PATH=$PATH:/usr/local/Homebrew/bin;
+    }
+
+    function install_nvm () {
+        function install_node () {
+            export NVM_DIR="$HOME/.nvm"
+            . "/usr/local/opt/nvm/nvm.sh"
+            nvm install 7.6.0;
+        }
+
+        brew install nvm \
+        && install_node
+    }
+
+    function install_react_native () {
+        brew tap caskroom/versions
+        brew cask install google-chrome;
+        brew install defaultbrowser;
+        npm install react-native-cli -g
+    }
+
+    function install_android () {
+        mkdir ~/.android;
+        touch ~/.android/repositories.cfg;
+        brew cask install java8 android-sdk android-studio;
+
+        export ANDROID_SDK_ROOT="/usr/local/share/android-sdk";
+        export PATH=$PATH:$ANDROID_SDK_ROOT/tools:$ANDROID_SDK_ROOT/platform-tools;
+
+        echo 'export ANDROID_SDK_ROOT="/usr/local/share/android-sdk"' >> ~/.bash_profile;
+        echo "export PATH=$PATH:$ANDROID_SDK_ROOT/tools:$ANDROID_SDK_ROOT/platform-tools" >> ~/.bash_profile;
+        echo y | sdkmanager "platform-tools" \
+        && echo y | sdkmanager "system-images;android-28;google_apis;x86" \
+        && avdmanager create avd -n "Pixel-28" -k "system-images;android-28;google_apis;x86" --device pixel;
+    }
+
+    function install_ios () {
+        function prompt_ide_installs () {
+            echo "In order to run applications on iOS, please install Xcode. App Store link will open shortly.";
+            open -a "/Applications/Google Chrome.app" https://itunes.apple.com/au/app/xcode/id497799835;
+            defaultbrowser chrome
+        }
+        sudo gem install cocoapods fastlane;
+        prompt_ide_installs;
+
+#        Disabled until mas signin is fixed
+#        brew install mas;
+#        read -p 'App-Store-Username:' uservar \
+#        && read -sp 'App-Store-Password:' passvar \
+#        && mas signin $uservar $passvar \
+#        && mas install 497799835
+    }
+
+    function add_sudo () {
+        echo $(osascript -e 'Tell application "System Events" to display dialog "Enter the Admin password:" with hidden answer default answer ""' -e 'text returned of result' 2>/dev/null) | sudo -S echo $USER 'ALL=(ALL) NOPASSWD:ALL' | sudo -S EDITOR='tee -a' visudo
+#        echo $USER 'ALL=(ALL) NOPASSWD:ALL' | sudo -S EDITOR='tee -a' visudo
+    }
+
+    # create bash profile
+    touch ~/.bash_profile;
+    mkdir ~/.nvm;
+    add_sudo \
+    && install_homebrew \
+    && install_nvm \
+    && install_react_native \
+    && install_android \
+    && install_ios;
+}
+
+install;
